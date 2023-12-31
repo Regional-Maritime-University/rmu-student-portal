@@ -5,114 +5,99 @@ CREATE SCHEMA IF NOT EXISTS `rmu_student_mgt_db` DEFAULT CHARACTER SET utf8 ;
 USE `rmu_student_mgt_db` ;
 
 -- -----------------------------------------------------
--- Table `academic_years`
+-- Table `academic_year`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `academic_years` (
+CREATE TABLE IF NOT EXISTS `academic_year` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `start_year` YEAR NOT NULL, 
   `end_year` YEAR NOT NULL,
   `name` VARCHAR(15) GENERATED ALWAYS AS (CONCAT(`start_year`, '-', `end_year`)) VIRTUAL,
   PRIMARY KEY (`id`)
 );
-CREATE INDEX name_academic_years_idx ON `academic_years` (`name`);
-CREATE INDEX start_year_academic_years_idx ON `academic_years` (`start_year`);
-CREATE INDEX end_year_academic_years_idx ON `academic_years` (`end_year`);
-INSERT INTO `academic_years` (`name`, `start_year`, `end_year`) VALUES ('2023 - 2024', '2023', '2024');
+CREATE INDEX IF NOT EXISTS academic_year_name_idx1 ON `academic_year` (`name`);
+CREATE INDEX IF NOT EXISTS academic_year_start_year_idx1 ON `academic_year` (`start_year`);
+CREATE INDEX IF NOT EXISTS academic_year_end_year_idx1 ON `academic_year` (`end_year`);
+INSERT INTO `academic_year` (`name`, `start_year`, `end_year`) VALUES ('2023 - 2024', '2023', '2024');
 
 -- -----------------------------------------------------
--- Table `semesters`
+-- Table `semester`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `semesters` (
+CREATE TABLE IF NOT EXISTS `semester` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(20) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
 );
-CREATE INDEX name_semesters_idx ON `semesters` (`name`);
-INSERT INTO `semesters` (`name`) VALUES ('SEMESTER 1'), ('SEMESTER 2');
+CREATE INDEX IF NOT EXISTS semester_name_idx1 ON `semester` (`name`);
+INSERT INTO `semester` (`name`) VALUES ('SEMESTER 1'), ('SEMESTER 2');
 
 -- -----------------------------------------------------
--- Table `departments`
+-- Table `department`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `departments` (
+CREATE TABLE IF NOT EXISTS `department` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
 );
-CREATE INDEX name_departments_idx1 ON `departments` (`name`);
+CREATE INDEX IF NOT EXISTS department_name_idx1 ON `department` (`name`);
 
 -- -----------------------------------------------------
--- Table `programs`
+-- Table `program`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `programs` (
-  `id` INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS `program` (
+  `code` VARCHAR(10) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
-  `code` VARCHAR(25) NOT NULL UNIQUE,
   `duration` INT DEFAULT 0,
   `dur_format` VARCHAR(25) DEFAULT 'YEAR',
-  `fk_deptID` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_programs_departments1` 
-    FOREIGN KEY (`fk_deptID`) REFERENCES `departments` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  `fk_department` INT NOT NULL,
+  PRIMARY KEY (`code`),
+  CONSTRAINT `fk_program_department1` FOREIGN KEY (`fk_department`) REFERENCES `department` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX name_programs_idx1 ON `programs` (`name`);
-CREATE INDEX code_programs_idx1 ON `programs` (`code`);
-CREATE INDEX duration_programs_idx1 ON `programs` (`duration`);
-CREATE INDEX dur_format_programs_idx1 ON `programs` (`dur_format`);
+CREATE INDEX IF NOT EXISTS program_name_idx1 ON `program` (`name`);
+CREATE INDEX IF NOT EXISTS program_duration_idx1 ON `program` (`duration`); 
+CREATE INDEX IF NOT EXISTS program_dur_format_idx1 ON `program` (`dur_format`);
 
 -- -----------------------------------------------------
--- Table `courses`
+-- Table `course`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `courses` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(10) NOT NULL UNIQUE,
+CREATE TABLE IF NOT EXISTS `course` (
+  `code` VARCHAR(10) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `credit_hours` INT DEFAULT 0,
-  `fk_deptID` INT NOT NULL,
-  `added_at` 
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_courses_departments1` 
-    FOREIGN KEY (`fk_deptID`) REFERENCES `departments` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  `fk_department` INT NOT NULL,
+  PRIMARY KEY (`code`),
+  CONSTRAINT `fk_course_department1` FOREIGN KEY (`fk_department`) REFERENCES `department` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX code_courses_idx1 ON `courses` (`code`);
-CREATE INDEX name_courses_idx1 ON `courses` (`name`);
-CREATE INDEX credit_hours_courses_idx1 ON `courses` (`credit_hours`);
+CREATE INDEX IF NOT EXISTS course_name_idx1 ON `course` (`name`);
+CREATE INDEX IF NOT EXISTS course_credit_hours_idx1 ON `course` (`credit_hours`);
 
 -- -----------------------------------------------------
--- Table `classes`
+-- Table `room`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `classes` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(10) NOT NULL UNIQUE,
-  `fk_progID` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_classes_programs1`
-    FOREIGN KEY (`fk_progID`) REFERENCES `programs` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+CREATE TABLE IF NOT EXISTS `room` (
+  `number` VARCHAR(10) NOT NULL,
+  `capacity`INT NOT NULL,
+  `location` VARCHAR(255),
+  `fk_department` INT NOT NULL,
+  PRIMARY KEY (`number`),
+  CONSTRAINT `fk_room_department1` FOREIGN KEY (`fk_department`) REFERENCES `department` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX name_classes_idx1 ON `classes` (`name`);
+CREATE INDEX IF NOT EXISTS room_code_idx1 ON `room` (`capacity`);
+CREATE INDEX IF NOT EXISTS room_name_idx1 ON `room` (`location`);
 
 -- -----------------------------------------------------
--- Table `courses_classes`
+-- Table `class`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `courses_classes` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `fk_courseID` VARCHAR(10) NOT NULL,
-  `fk_classID` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_courses_classes_courses1`
-    FOREIGN KEY (`fk_courseID`) REFERENCES `courses` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_courses_classes_classes1`
-    FOREIGN KEY (`fk_classID`) REFERENCES `classes` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+CREATE TABLE IF NOT EXISTS `class` (
+  `code` VARCHAR(10) NOT NULL,
+  `fk_program` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`code`),
+  CONSTRAINT `fk_class_program1`FOREIGN KEY (`fk_program`) REFERENCES `program` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 
 -- -----------------------------------------------------
--- Table `students`
+-- Table `student`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `students` (
+CREATE TABLE IF NOT EXISTS `student` (
   `index_number` VARCHAR(10) NOT NULL,
   `app_number` VARCHAR(10) NOT NULL UNIQUE,
   `email` VARCHAR(255) NOT NULL UNIQUE,
@@ -128,60 +113,80 @@ CREATE TABLE IF NOT EXISTS `students` (
   `date_admitted` DATE DEFAULT CURRENT_DATE(),
   `term_admitted` VARCHAR(15) NOT NULL,
   `stream_admitted` VARCHAR(15) NOT NULL,
-  `fk_deptID` INT NOT NULL,
-  `fk_progID` INT NOT NULL,
-  `fk_classID` VARCHAR(50) NOT NULL,
+  `fk_department` INT NOT NULL,
+  `fk_class` VARCHAR(10) NOT NULL,
   PRIMARY KEY (`index_number`),
-  CONSTRAINT `fk_students_departments1` 
-    FOREIGN KEY (`fk_deptID`) REFERENCES `departments` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_programs1` 
-    FOREIGN KEY (`fk_progID`) REFERENCES `programs` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_classes1` 
-    FOREIGN KEY (`fk_classID`) REFERENCES `classes` (`name`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_student_department1` FOREIGN KEY (`fk_department`) REFERENCES `department` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_student_class1` FOREIGN KEY (`fk_class`) REFERENCES `class` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX app_number_students_idx1 ON `students` (`app_number`);
-CREATE INDEX email_students_idx1 ON `students` (`email`);
-CREATE INDEX first_name_students_idx1 ON `students` (`first_name`);
-CREATE INDEX last_name_students_idx1 ON `students` (`last_name`);
-CREATE INDEX gender_students_idx1 ON `students` (`gender`);
-CREATE INDEX dob_students_idx1 ON `students` (`dob`);
-CREATE INDEX nationality_students_idx1 ON `students` (`nationality`);
-CREATE INDEX date_admitted_students_idx1 ON `students` (`date_admitted`);
-CREATE INDEX term_admitted_students_idx1 ON `students` (`term_admitted`);
-CREATE INDEX stream_admitted_students_idx1 ON `students` (`stream_admitted`);
+CREATE INDEX IF NOT EXISTS student_app_number_idx1 ON `student` (`app_number`);
+CREATE INDEX IF NOT EXISTS student_email_idx1 ON `student` (`email`);
+CREATE INDEX IF NOT EXISTS student_first_name_idx1 ON `student` (`first_name`);
+CREATE INDEX IF NOT EXISTS student_last_name_idx1 ON `student` (`last_name`);
+CREATE INDEX IF NOT EXISTS student_gender_idx1 ON `student` (`gender`);
+CREATE INDEX IF NOT EXISTS student_dob_idx1 ON `student` (`dob`);
+CREATE INDEX IF NOT EXISTS student_nationality_idx1 ON `student` (`nationality`);
+CREATE INDEX IF NOT EXISTS student_date_admitted_idx1 ON `student` (`date_admitted`);
+CREATE INDEX IF NOT EXISTS student_term_admitted_idx1 ON `student` (`term_admitted`);
+CREATE INDEX IF NOT EXISTS student_stream_admitted_idx1 ON `student` (`stream_admitted`);
 
 -- -----------------------------------------------------
--- Table `students_courses_registered`
+-- Table `section`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `students_courses_registered` (
+CREATE TABLE IF NOT EXISTS `section` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `fk_academic_yearID` INT NOT NULL,
-  `fk_semesterID` INT NOT NULL,
-  `fk_courseID` VARCHAR(10) NOT NULL,
-  `fk_studentID` VARCHAR(10) NOT NULL,
+  `fk_course` VARCHAR(10) NOT NULL,
+  `fk_class` VARCHAR(10) NOT NULL,
+  `fk_academic_year` INT NOT NULL,
+  `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_students_courses_registered_academic_years1`
-    FOREIGN KEY (`fk_academic_yearID`) REFERENCES `academic_years` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_courses_registered_semesters1` 
-    FOREIGN KEY (`fk_semesterID`) REFERENCES `semesters` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_courses_registered_courses1` 
-    FOREIGN KEY (`fk_courseID`) REFERENCES `courses` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_courses_registered_students1` 
-    FOREIGN KEY (`fk_studentID`) REFERENCES `students` (`index_number`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_section_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_section_class1` FOREIGN KEY (`fk_class`) REFERENCES `class` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_section_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_section_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+-- -----------------------------------------------------
+-- Table `schedule`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `schedule` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `day_of_week` VARCHAR(10) NOT NULL,
+  `course_crdt_hrs` INT DEFAULT 0,
+  `start_time` TIME NOT NULL,
+  `end_time` TIME GENERATED ALWAYS AS (`start_time` + (`course_crdt_hrs` * MINUTE(50))),
+  `fk_course` VARCHAR(10) NOT NULL,
+  `fk_room` VARCHAR(10) NOT NULL,
+  `fk_academic_year` INT NOT NULL,
+  `fk_semester` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_schedule_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_schedule_room1` FOREIGN KEY (`fk_room`) REFERENCES `room` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_schedule_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_schedule_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+-- -----------------------------------------------------
+-- Table `registration`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `registration` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `fk_course` VARCHAR(10) NOT NULL,
+  `fk_student` VARCHAR(10) NOT NULL,
+  `fk_academic_year` INT NOT NULL,
+  `fk_semester` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_registration_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_registration_student1` FOREIGN KEY (`fk_student`) REFERENCES `student` (`index_number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_registration_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_registration_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 
 -- -----------------------------------------------------
 -- Table `staff`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `staff` (
-  `staff_number` VARCHAR(20) NOT NULL,
+  `number` VARCHAR(10) NOT NULL,
   `email` VARCHAR(255) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
   `first_name` VARCHAR(255) NOT NULL,
@@ -190,156 +195,127 @@ CREATE TABLE IF NOT EXISTS `staff` (
   `suffix` VARCHAR(10),
   `gender` VARCHAR(1) DEFAULT 'F',
   `role` VARCHAR(15) NOT NULL,
-  `fk_deptID` INT NOT NULL,
-  PRIMARY KEY (`staff_number`),
-  CONSTRAINT `fk_staff_departments1`
-    FOREIGN KEY (`fk_deptID`) REFERENCES `departments` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  `fk_department` INT NOT NULL,
+  PRIMARY KEY (`number`),
+  CONSTRAINT `fk_staff_department1` FOREIGN KEY (`fk_department`) REFERENCES `department` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX staff_idx1 ON `staff` (`staff_number`, `email`, `fname`, `lname`, `role`);
+CREATE INDEX IF NOT EXISTS staff_email_idx1 ON `staff` (`email`);
+CREATE INDEX IF NOT EXISTS staff_first_name_idx1 ON `staff` (`first_name`);
+CREATE INDEX IF NOT EXISTS staff_last_name_idx1 ON `staff` (`last_name`);
+CREATE INDEX IF NOT EXISTS staff_suffix_idx1 ON `staff` (`suffix`);
+CREATE INDEX IF NOT EXISTS staff_gender_idx1 ON `staff` (`gender`);
+CREATE INDEX IF NOT EXISTS staff_role_idx1 ON `staff` (`role`);
 
 -- -----------------------------------------------------
--- Table `lecturers_courses`
+-- Table `lecture`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `lecturers_courses` (
+CREATE TABLE IF NOT EXISTS `lecture` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `fk_academic_yearID` INT NOT NULL,
-  `fk_semesterID` INT NOT NULL,
-  `fk_staffID` VARCHAR(20) NOT NULL,
-  `fk_courseID` VARCHAR(10) NOT NULL,
-  PRIMARY KEY (`id`),,
-  CONSTRAINT `lecturers_courses_academic_years1`
-    FOREIGN KEY (`fk_academic_yearID`) REFERENCES `rmu_student_mgt_db`.`academic_years` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `lecturers_courses_semesters1` 
-    FOREIGN KEY (`fk_semesterID`) REFERENCES `rmu_student_mgt_db`.`semesters` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_lecturers_courses_staff1`
-    FOREIGN KEY (`fk_staffID`) REFERENCES `staff` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_lecturers_courses_courses1`
-    FOREIGN KEY (`fk_courseID`) REFERENCES `courses` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  `fk_staff` VARCHAR(20) NOT NULL,
+  `fk_course` VARCHAR(10) NOT NULL,
+  `fk_academic_year` INT NOT NULL,
+  `fk_semester` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_lecture_staff1` FOREIGN KEY (`fk_staff`) REFERENCES `staff` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_lecture_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `lecture_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `lecture_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 
 -- -----------------------------------------------------
--- Table `quizzes`
+-- Table `quizz`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `quizzes` (
+CREATE TABLE IF NOT EXISTS `quizz` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(255) NOT NULL,
   `total_mark` DECIMAL(4,1) NOT NULL,
   `pass_mark` DECIMAL(4,1) NOT NULL,
-  `start_datetime` DATETIME NOT NULL,
+  `start_date` DATETIME NOT NULL,
+  `start_time` DATETIME NOT NULL,
   `duration` INT NOT NULL,
-  `fk_academic_yearID` INT NOT NULL,
-  `fk_semesterID` INT NOT NULL,
-  `fk_courseID` INT NOT NULL,
-  `fk_staffID` VARCHAR(20) NOT NULL,
+  `fk_course` VARCHAR(10) NOT NULL,
+  `fk_staff` VARCHAR(10) NOT NULL,
+  `fk_academic_year` INT NOT NULL,
+  `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_quizzes_courses_registered_academic_years1`
-    FOREIGN KEY (`fk_academic_yearID`) REFERENCES `academic_years` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_quizzes_courses_registered_semesters1` 
-    FOREIGN KEY (`fk_semesterID`) REFERENCES `semesters` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_quizzes_courses1`
-    FOREIGN KEY (`fk_courseID`) REFERENCES `courses` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_quizzes_staff1`
-    FOREIGN KEY (`fk_staffID`) REFERENCES `staff` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_quizz_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_quizz_staff1` FOREIGN KEY (`fk_staff`) REFERENCES `staff` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_quizz_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_quizz_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX title_quizzes_idx1 ON `quizzes` (`title`);
-CREATE INDEX total_mark_quizzes_idx1 ON `quizzes` (`total_mark`);
-CREATE INDEX pass_mark_quizzes_idx1 ON `quizzes` (`pass_mark`);
-CREATE INDEX start_datetime_quizzes_idx1 ON `quizzes` (`start_datetime`);
-CREATE INDEX end_datetime_quizzes_idx1 ON `quizzes` (`end_datetime`);
+CREATE INDEX IF NOT EXISTS quizz_title_idx1 ON `quizz` (`title`);
+CREATE INDEX IF NOT EXISTS quizz_total_mark_idx1 ON `quizz` (`total_mark`);
+CREATE INDEX IF NOT EXISTS quizz_pass_mark_idx1 ON `quizz` (`pass_mark`);
+CREATE INDEX IF NOT EXISTS quizz_start_date_idx1 ON `quizz` (`start_date`);
+CREATE INDEX IF NOT EXISTS quizz_start_time_idx1 ON `quizz` (`start_time`);
+CREATE INDEX IF NOT EXISTS quizz_duration_idx1 ON `quizz` (`duration`);
 
 -- -----------------------------------------------------
--- Table `questions`
+-- Table `question`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `questions` (
+CREATE TABLE IF NOT EXISTS `question` (
   `id` INT NOT NULL AUTO_INCREMENT,
+  `type` VARCHAR(25) NOT NULL,
   `question` LONGTEXT NOT NULL,
   `marks` INT NOT NULL,
-  `type` VARCHAR(25) NOT NULL,
-  `fk_courseID` VARCHAR(10) NOT NULL,
-  `fk_staffID` VARCHAR(100) NOT NULL,
+  `fk_course` VARCHAR(10) NOT NULL,
+  `fk_staff` VARCHAR(10) NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_questions_courses1`
-    FOREIGN KEY (`fk_courseID`) REFERENCES `courses` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_questions_staff1`
-    FOREIGN KEY (`fk_staffID`) REFERENCES `staff` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_question_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_question_staff1` FOREIGN KEY (`fk_staff`) REFERENCES `staff` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX question_questions_idx1 ON `questions` (`question`);
-CREATE INDEX marks_questions_idx1 ON `questions` (`marks`);
-CREATE INDEX type_questions_idx1 ON `questions` (`type`);
+CREATE INDEX IF NOT EXISTS question_type_idx1 ON `question` (`type`);
+CREATE INDEX IF NOT EXISTS question_question_idx1 ON `question` (`question`);
+CREATE INDEX IF NOT EXISTS question_marks_idx1 ON `question` (`marks`);
 
 -- -----------------------------------------------------
--- Table `answers`
+-- Table `answer`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `answers` (
+CREATE TABLE IF NOT EXISTS `answer` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `option` TEXT(500) NOT NULL,
   `right_answer` VARCHAR(255) NULL,
-  `fk_questID` INT NOT NULL,
+  `fk_question` INT NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_answers_questions1`
-    FOREIGN KEY (`fk_questID`) REFERENCES `questions` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_answer_question1` FOREIGN KEY (`fk_question`) REFERENCES `question` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX option_answers_idx1 ON `answers` (`option`);
-CREATE INDEX right_answer_answers_idx1 ON `answers` (`right_answer`);
+CREATE INDEX IF NOT EXISTS answer_option_idx1 ON `answer` (`option`);
+CREATE INDEX IF NOT EXISTS answer_right_answer_idx1 ON `answer` (`right_answer`);
 
 -- -----------------------------------------------------
--- Table `quizzes_questions`
+-- Table `quizz_question`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `quizzes_questions` (
+CREATE TABLE IF NOT EXISTS `quizz_question` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `fk_quizID` INT NOT NULL,
-  `fk_questID` INT NOT NULL,
+  `fk_quizz` INT NOT NULL,
+  `fk_question` INT NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_quizzes_questions_quizzes1`
-    FOREIGN KEY (`fk_quizID`) REFERENCES `quizzes` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_quizzes_questions_questions1`
-    FOREIGN KEY (`fk_questID`) REFERENCES `questions` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_quizz_question_quizz1` FOREIGN KEY (`fk_quizz`) REFERENCES `quizz` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_quizz_question_question1` FOREIGN KEY (`fk_question`) REFERENCES `question` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 
 -- -----------------------------------------------------
--- Table `students_quizzes_responses`
+-- Table `student_quizz_response`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `students_quizzes_responses` (
+CREATE TABLE IF NOT EXISTS `student_quizz_response` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `fk_quizID` INT NOT NULL,
-  `fk_questID` INT NOT NULL,
-  `fk_ansID` INT NOT NULL,
-  `fk_studentID` VARCHAR(10) NOT NULL,
+  `fk_quizz` INT NOT NULL,
+  `fk_question` INT NOT NULL,
+  `fk_answer` INT NOT NULL,
+  `fk_student` VARCHAR(10) NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_students_quizzes_responses_quizzes1`
-    FOREIGN KEY (`fk_quizID`) REFERENCES `quizzes` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_quizzes_responses_questions1`
-    FOREIGN KEY (`fk_questID`) REFERENCES `questions` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_quizzes_responses_answers1`
-    FOREIGN KEY (`fk_ansID`) REFERENCES `answers` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_quizzes_responses_students1`
-    FOREIGN KEY (`fk_studentID`) REFERENCES `students` (`index_number`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_student_quizz_response_quizz1` FOREIGN KEY (`fk_quizz`) REFERENCES `quizz` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_student_quizz_response_question1` FOREIGN KEY (`fk_question`) REFERENCES `question` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_student_quizz_response_answer1` FOREIGN KEY (`fk_answer`) REFERENCES `answer` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_student_quizz_response_student1` FOREIGN KEY (`fk_student`) REFERENCES `student` (`index_number`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 
 -- -----------------------------------------------------
--- Table `students_quizzes_stats`
+-- Table `student_quizz_stat`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `students_quizzes_stats` (
+CREATE TABLE IF NOT EXISTS `student_quizz_stat` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `total_mark` DECIMAL(4,1) NOT NULL,
+  `total_mark` DECIMAL(4,1) NOT NULL,g
   `pass_mark` DECIMAL(4,1) NOT NULL,
   `score_obtained` INT NOT NULL DEFAULT 0,
   `score_percent` DECIMAL(4,1) GENERATED ALWAYS AS ((`score_obtained` / `total_mark`) * 100) VIRTUAL,
@@ -361,13 +337,9 @@ CREATE TABLE IF NOT EXISTS `students_quizzes_stats` (
       WHEN `score_obtained` < `pass_mark` THEN 0
     END
   ) VIRTUAL,
-  `fk_quizID` INT NOT NULL,
-  `fk_studentID` VARCHAR(10) NOT NULL,
+  `fk_quizz` INT NOT NULL,
+  `fk_student` VARCHAR(10) NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_students_quizzes_stats_quizzes1`
-    FOREIGN KEY (`fk_quizID`) REFERENCES `quizzes` (`id`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_students_quizzes_stats_students1`
-    FOREIGN KEY (`fk_studentID`) REFERENCES `students` (`index_number`) 
-    ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_student_quizz_stat_quizz1` FOREIGN KEY (`fk_quizz`) REFERENCES `quizz` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_student_quizz_stat_student1` FOREIGN KEY (`fk_student`) REFERENCES `student` (`index_number`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
