@@ -399,7 +399,7 @@ class AdminController
         $archived = 0;
         foreach ($students as $student) {
             $query = "UPDATE `student` SET `archived` = 1  WHERE `index_number` = :i";
-            $archived += $this->dm->runQuery($query, array(':i' => $student["index_number"]));
+            $archived += $this->dm->runQuery($query, array(':i' => $student["index-number"]));
         }
         return $archived;
     }
@@ -407,19 +407,21 @@ class AdminController
     public function fetchAllStudentByDepartment($departmentID, bool $isArchived = false): mixed
     {
         $query = "SELECT s.`index_number` AS indexNumber, s.`app_number` AS appNumber, s.`email`, s.`phone_number` AS phoneNumber, 
-        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, s.`nationality`, 
-        s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, s.`stream_admitted` AS streamAdmitted, 
-        d.`id` AS departmentID, d.`name` AS departmentName 
-        FROM `student` AS s, `department` AS d WHERE s.`fk_department` = d.`id` AND d.`id` = :d AND c.`archived` = :a";
+        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, 
+        s.`nationality`, s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, 
+        s.`stream_admitted` AS streamAdmitted, s.`archived`, d.`id` AS departmentID, d.`name` AS departmentName 
+        FROM `student` AS s, `department` AS d 
+        WHERE s.`fk_department` = d.`id` AND d.`id` = :d AND c.`archived` = :a";
         return $this->dm->runQuery($query, array(":d" => $departmentID, ":a" => $isArchived));
     }
 
     public function fetchAllStudentByProgram($programCode, bool $isArchived = false): mixed
     {
         $query = "SELECT s.`index_number` AS indexNumber, s.`app_number` AS appNumber, s.`email`, s.`phone_number` AS phoneNumber, 
-        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, s.`nationality`, 
-        s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, s.`stream_admitted` AS streamAdmitted, 
-        d.`id` AS departmentID, d.`name` AS departmentName FROM `student` AS s, `department` AS d, `class` AS c 
+        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, 
+        s.`nationality`, s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, 
+        s.`stream_admitted` AS streamAdmitted, s.`archived`, d.`id` AS departmentID, d.`name` AS departmentName 
+        FROM `student` AS s, `department` AS d, `class` AS c 
         WHERE s.`fk_department` = d.`id` AND s.`class` = c.`code` AND c.`fk_program` = :p AND s.`archived` = :a";
         return $this->dm->runQuery($query, array(":p" => $programCode, ":a" => $isArchived));
     }
@@ -427,9 +429,10 @@ class AdminController
     public function fetchAllStudentByClass($classCode, bool $isArchived = false): mixed
     {
         $query = "SELECT s.`index_number` AS indexNumber, s.`app_number` AS appNumber, s.`email`, s.`phone_number` AS phoneNumber, 
-        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, s.`nationality`, 
-        s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, s.`stream_admitted` AS streamAdmitted, 
-        d.`id` AS departmentID, d.`name` AS departmentName FROM `student` AS s, `department` AS d, `class` AS c 
+        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, 
+        s.`nationality`, s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, 
+        s.`stream_admitted` AS streamAdmitted, s.`archived`, d.`id` AS departmentID, d.`name` AS departmentName 
+        FROM `student` AS s, `department` AS d, `class` AS c 
         WHERE s.`fk_department` = d.`id` AND s.`class` = c.`code` AND c.`class` = :c AND s.`archived` = :a";
         return $this->dm->runQuery($query, array(":c" => $classCode, ":a" => $isArchived));
     }
@@ -437,10 +440,189 @@ class AdminController
     public function fetchAllStudentByIndexNumber($indexNumber, bool $isArchived = false): mixed
     {
         $query = "SELECT s.`index_number` AS indexNumber, s.`app_number` AS appNumber, s.`email`, s.`phone_number` AS phoneNumber, 
-        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, s.`nationality`, 
-        s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, s.`stream_admitted` AS streamAdmitted, 
-        d.`id` AS departmentID, d.`name` AS departmentName FROM `student` AS s, `department` AS d 
+        s.`first_name` AS firstName, s.`middle_name` AS middleName, s.`last_name` AS lastName, s.`suffix`, s.`gender`, s.`dob`, 
+        s.`nationality`, s.`photo`, s.`date_admitted` AS dateAdmitted, s.`term_admitted` AS termAdmitted, 
+        s.`stream_admitted` AS streamAdmitted, s.`archived`, d.`id` AS departmentID, d.`name` AS departmentName 
+        FROM `student` AS s, `department` AS d 
         WHERE s.`fk_department` = d.`id` AND s.`index_number` = :i AND s.`archived` = :a";
         return $this->dm->runQuery($query, array(":i" => $indexNumber, ":a" => $isArchived));
+    }
+
+    // CRUD for Section
+    public function addSection(array $sections): mixed
+    {
+        $added = 0;
+        foreach ($sections as $section) {
+            $query = "INSERT INTO `section` (`fk_course`, `fk_class`, `fk_academic_year`, `fk_semester`) VALUES (:fkc, :fkl, :fka, :fks)";
+            $added += $this->dm->runQuery($query, array(
+                ':fkc' => $section["course"],
+                ':fkl' => $section["class"],
+                ':fla' => $section["academic-year"],
+                ':fks' => $section["semester"]
+            ));
+        }
+        return $added;
+    }
+
+    public function editSection($section): mixed
+    {
+        $query = "UPDATE `section` SET `fk_course` = :fkc, `fk_class` = :fkl, `fk_academic_year` = :fka, `fk_semester` = :fks 
+        WHERE `id` = :i";
+        return $this->dm->runQuery($query, array(':i' => $section["section"]));
+    }
+
+    public function archiveSection($sections): mixed
+    {
+        $removed = 0;
+        foreach ($sections as $section) {
+            $query = "UPDATE `section` SET `archived` = 1  WHERE `id` = :i";
+            $removed += $this->dm->runQuery($query, array(':i' => $section["section"]));
+        }
+        return $removed;
+    }
+
+    public function fetchAllSection(bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS sectionID, c.`code` AS courseCode, c.`name` AS courseName, l.`code` AS classCode, 
+        a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `section` AS s, `course` AS c, `class` AS l, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_class` = l.`code` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`archived` = :a";
+        return $this->dm->runQuery($query, array(":a" => $isArchived));
+    }
+
+    public function fetchSectionByID($sectionID, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS sectionID, c.`code` AS courseCode, c.`name` AS courseName, l.`code` AS classCode, 
+        a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `section` AS s, `course` AS c, `class` AS l, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_class` = l.`code` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`id` = :i AND s.`archived` = :a";
+        return $this->dm->runQuery($query, array(':i' => $sectionID, ":a" => $isArchived));
+    }
+
+    public function fetchSectionByCourse($courseCode, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS sectionID, c.`code` AS courseCode, c.`name` AS courseName, l.`code` AS classCode, 
+        a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `section` AS s, `course` AS c, `class` AS l, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_class` = l.`code` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`fk_course` = :fkc AND s.`archived` = :a";
+        return $this->dm->runQuery($query, array(':fkc' => $courseCode, ":a" => $isArchived));
+    }
+
+    public function fetchSectionByClass($classCode, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS sectionID, c.`code` AS courseCode, c.`name` AS courseName, l.`code` AS classCode, 
+        a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `section` AS s, `course` AS c, `class` AS l, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_class` = l.`code` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`fk_class` = :fkl AND s.`archived` = :a";
+        return $this->dm->runQuery($query, array(':fkl' => $classCode, ":a" => $isArchived));
+    }
+
+    // CRUD for Schedule
+    public function addSchedule(array $sections): mixed
+    {
+        $added = 0;
+        foreach ($sections as $section) {
+            $query = "INSERT INTO `schedule` (`day_of_week`, `course_crdt_hrs`, `start_time`, 
+            `end_time`,`fk_course`, `fk_room`, `fk_academic_year`, `fk_semester`) 
+            VALUES (:d, :ch, :st, :et, :fkc, :fkr, :fka, :fks)";
+            $added += $this->dm->runQuery($query, array(
+                ':d' => $section["day-of-week"],
+                ':ch' => $section["credit-hours"],
+                ':st' => $section["start-time"],
+                ':et' => $section["end-time"],
+                ':fkc' => $section["course"],
+                ':fkr' => $section["room"],
+                ':fka' => $section["academic-year"],
+                ':fks' => $section["semester"]
+            ));
+        }
+        return $added;
+    }
+
+    public function editSchedule($schedule): mixed
+    {
+        $query = "UPDATE `schedule` SET `day_of_week` = :d, `course_crdt_hrs` = :ch, `start_time` = :st, 
+        `end_time` = :et, `fk_course` = :fkc, `fk_room` = :fkr, `fk_academic_year` = :fka, `fk_semester` = :fks 
+        WHERE `id` = :i";
+        return $this->dm->runQuery($query, array(
+            ':d' => $schedule["day-of-week"],
+            ':ch' => $schedule["credit-hours"],
+            ':st' => $schedule["start-time"],
+            ':et' => $schedule["end-time"],
+            ':fkc' => $schedule["course"],
+            ':fkr' => $schedule["room"],
+            ':fka' => $schedule["academic-year"],
+            ':fks' => $schedule["semester"],
+            ':i' => $schedule["schedule"]
+        ));
+    }
+
+    public function archiveSchedule($schedules): mixed
+    {
+        $removed = 0;
+        foreach ($schedules as $schedule) {
+            $query = "UPDATE `schedule` SET `archived` = 1  WHERE `id` = :i";
+            $removed += $this->dm->runQuery($query, array(':i' => $schedule["schedule"]));
+        }
+        return $removed;
+    }
+
+    public function fetchScheduleByID($scheduleID, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS scheduleID, s.`day_of_week` AS dayOfWeek, s.`course_crdt_hrs` AS creditHours, 
+        s.`start_time` AS startTime, s.`end_time` AS endTime, s.`archived`, c.`code` AS courseCode, c.`name` courseName, 
+        r.`number` AS roomNumber, a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `schedule` AS s, `course` AS c, `room` AS r, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_room` = r.`number` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`id` = :i AND s.`archived` = :a";
+        return $this->dm->runQuery($query, array(':i' => $scheduleID, ":a" => $isArchived));
+    }
+
+    public function fetchScheduleBySemester($academicYear, $semester, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS scheduleID, s.`day_of_week` AS dayOfWeek, s.`course_crdt_hrs` AS creditHours, 
+        s.`start_time` AS startTime, s.`end_time` AS endTime, s.`archived`, c.`code` AS courseCode, c.`name` courseName, 
+        r.`number` AS roomNumber, a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `schedule` AS s, `course` AS c, `room` AS r, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_room` = r.`number` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`archived` = :a AND a.`id` = :ay AND e.id = :sm";
+        return $this->dm->runQuery($query, array(':ay' => $academicYear, ':sm' => $semester, ":a" => $isArchived));
+    }
+
+    public function fetchScheduleByCourse($courseCode, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS scheduleID, s.`day_of_week` AS dayOfWeek, s.`course_crdt_hrs` AS creditHours, 
+        s.`start_time` AS startTime, s.`end_time` AS endTime, s.`archived`, c.`code` AS courseCode, c.`name` courseName, 
+        r.`number` AS roomNumber, a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `schedule` AS s, `course` AS c, `room` AS r, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_room` = r.`number` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`archived` = :a AND s.`fk_course` = :fkc";
+        return $this->dm->runQuery($query, array(':fkc' => $courseCode, ":a" => $isArchived));
+    }
+
+    public function fetchScheduleByRoom($roomNumber, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS scheduleID, s.`day_of_week` AS dayOfWeek, s.`course_crdt_hrs` AS creditHours, 
+        s.`start_time` AS startTime, s.`end_time` AS endTime, s.`archived`, c.`code` AS courseCode, c.`name` courseName, 
+        r.`number` AS roomNumber, a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `schedule` AS s, `course` AS c, `room` AS r, academic_year AS a, semester AS e 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_room` = r.`number` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`archived` = :a AND s.`fk_room` = :fkr";
+        return $this->dm->runQuery($query, array(':fkr' => $roomNumber, ":a" => $isArchived));
+    }
+
+    public function fetchScheduleByClass($classCode, bool $isArchived = false): mixed
+    {
+        $query = "SELECT s.`id` AS scheduleID, s.`day_of_week` AS dayOfWeek, s.`course_crdt_hrs` AS creditHours, 
+        s.`start_time` AS startTime, s.`end_time` AS endTime, s.`archived`, c.`code` AS courseCode, c.`name` courseName, 
+        r.`number` AS roomNumber, a.`id` AS academicYearID, a.`name` AS academicYearName, e.`id` AS semesterID, e.`name` AS semesterName 
+        FROM `schedule` AS s, `course` AS c, `room` AS r, academic_year AS a, semester AS e, section AS sc, class AS cs 
+        WHERE s.`fk_course` = c.`code` AND s.`fk_room` = r.`number` AND s.`fk_academic_year` = a.`id` AND 
+        s.`semester` = e.`id` AND s.`archived` = :a AND sc.`fk_course` = c.`course` AND sc.`class` = cs.`code` AND cs.`code` = :cc";
+        return $this->dm->runQuery($query, array(':cc' => $classCode, ":a" => $isArchived));
     }
 }
