@@ -26,9 +26,13 @@ INSERT INTO `academic_year` (`name`, `start_year`, `end_year`) VALUES ('2023 - 2
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `semester` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(20) NOT NULL UNIQUE,
+  `name` VARCHAR(20) NOT NULL,
+  `course_registration_opened` TINYINT(1) DEFAULT 0,
   `archived` TINYINT(1) DEFAULT 0,
-  PRIMARY KEY (`id`)
+  `fk_academic_year` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_semester_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+
 );
 CREATE INDEX IF NOT EXISTS semester_name_idx1 ON `semester` (`name`);
 CREATE INDEX IF NOT EXISTS semester_archived_idx1 ON `semester` (`archived`);
@@ -155,12 +159,12 @@ CREATE TABLE IF NOT EXISTS `section` (
   `archived` TINYINT(1) DEFAULT 0,
   `fk_course` VARCHAR(10) NOT NULL,
   `fk_class` VARCHAR(10) NOT NULL,
-  `fk_academic_year` INT NOT NULL,
+  -- `fk_academic_year` INT NOT NULL,
   `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_section_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_section_class1` FOREIGN KEY (`fk_class`) REFERENCES `class` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_section_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  -- CONSTRAINT `fk_section_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_section_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 CREATE INDEX IF NOT EXISTS section_archived_idx1 ON `section` (`archived`);
@@ -177,12 +181,12 @@ CREATE TABLE IF NOT EXISTS `schedule` (
   `archived` TINYINT(1) DEFAULT 0,
   `fk_course` VARCHAR(10) NOT NULL,
   `fk_room` VARCHAR(10) NOT NULL,
-  `fk_academic_year` INT NOT NULL,
+  -- `fk_academic_year` INT NOT NULL,
   `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_schedule_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_schedule_room1` FOREIGN KEY (`fk_room`) REFERENCES `room` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_schedule_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  -- CONSTRAINT `fk_schedule_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_schedule_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 CREATE INDEX IF NOT EXISTS schedule_day_of_week_idx1 ON `schedule` (`day_of_week`);
@@ -192,22 +196,22 @@ CREATE INDEX IF NOT EXISTS schedule_end_time_idx1 ON `schedule` (`end_time`);
 CREATE INDEX IF NOT EXISTS schedule_archived_idx1 ON `schedule` (`archived`);
 
 -- -----------------------------------------------------
--- Table `registration`
+-- Table `course_registration`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `registration` (
+CREATE TABLE IF NOT EXISTS `course_registration` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `archived` TINYINT(1) DEFAULT 0,
   `fk_course` VARCHAR(10) NOT NULL,
   `fk_student` VARCHAR(10) NOT NULL,
-  `fk_academic_year` INT NOT NULL,
+  -- `fk_academic_year` INT NOT NULL,
   `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_registration_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_registration_student1` FOREIGN KEY (`fk_student`) REFERENCES `student` (`index_number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_registration_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_registration_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `fk_course_registration_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_course_registration_student1` FOREIGN KEY (`fk_student`) REFERENCES `student` (`index_number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  -- CONSTRAINT `fk_course_registration_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_course_registration_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
-CREATE INDEX IF NOT EXISTS registration_archived_idx1 ON `registration` (`archived`);
+CREATE INDEX IF NOT EXISTS course_registration_archived_idx1 ON `course_registration` (`archived`);
 
 -- -----------------------------------------------------
 -- Table `staff`
@@ -243,12 +247,12 @@ CREATE TABLE IF NOT EXISTS `lecture` (
   `archived` TINYINT(1) DEFAULT 0,
   `fk_staff` VARCHAR(20) NOT NULL,
   `fk_course` VARCHAR(10) NOT NULL,
-  `fk_academic_year` INT NOT NULL,
+  -- `fk_academic_year` INT NOT NULL,
   `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_lecture_staff1` FOREIGN KEY (`fk_staff`) REFERENCES `staff` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_lecture_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `lecture_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  -- CONSTRAINT `lecture_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `lecture_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 CREATE INDEX IF NOT EXISTS lecture_archived_idx1 ON `lecture` (`archived`);
@@ -267,12 +271,12 @@ CREATE TABLE IF NOT EXISTS `quizz` (
   `archived` TINYINT(1) DEFAULT 0,
   `fk_course` VARCHAR(10) NOT NULL,
   `fk_staff` VARCHAR(10) NOT NULL,
-  `fk_academic_year` INT NOT NULL,
+  -- `fk_academic_year` INT NOT NULL,
   `fk_semester` INT NOT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_quizz_course1` FOREIGN KEY (`fk_course`) REFERENCES `course` (`code`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_quizz_staff1` FOREIGN KEY (`fk_staff`) REFERENCES `staff` (`number`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_quizz_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  -- CONSTRAINT `fk_quizz_academic_year1` FOREIGN KEY (`fk_academic_year`) REFERENCES `academic_year` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_quizz_semester1` FOREIGN KEY (`fk_semester`) REFERENCES `semester` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 CREATE INDEX IF NOT EXISTS quizz_title_idx1 ON `quizz` (`title`);
