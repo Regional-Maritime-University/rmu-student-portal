@@ -59,7 +59,7 @@ else if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
         $index_number = $expose->validateIndexNumber($_POST["index_number"]);
         $password = $expose->validatePassword($_POST["password"]);
-        $result = $user->loginUser($index_number, $password);
+        $result = $user->loginStudent($index_number, $password);
 
         if (!$result) {
             $_SESSION['isLoggedIn'] = true;
