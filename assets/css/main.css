@@ -147,7 +147,7 @@ input,
 select,
 textarea,
 .photo-upload-area {
-	font-size: 14px !important;
+	font-size: 16px !important;
 	line-height: 1.5 !important;
 }
 
@@ -343,13 +343,13 @@ fieldset legend {
 
 .form-control-login,
 .form-btn-login {
-	padding: 12px !important;
+	padding: 10px !important;
 }
 
 .form-btn-login {
 	max-width: 280px !important;
 	width: 100% !important;
-	margin-top: 10px !important;
+    /* margin-top: 10px !important;*/
 	background-color: #003262 !important;
 	border: 1px solid #003262 !important;
 	border-color: transparent !important;
@@ -555,6 +555,7 @@ main {
 	width: 100%;
 	height: 100%;
 	flex: 1;
+    margin-top: 100px;
 }
 
 .fp-header,
@@ -568,7 +569,7 @@ main {
 	top: 0;
 	left: 0;
 	right: 0;
-	box-shadow: 0 0 25px 0 black;
+	box-shadow: 0 0 25px 0 #ccc !important;
 	z-index: 999 !important;
 	width: 100% !important;
 }
@@ -914,13 +915,13 @@ form {
 	}
 
 	.rmu-logo-letter.logo-letter {
-		font-size: 12px !important;
+		font-size: 14px !important;
 		font-weight: 600 !important;
 		letter-spacing: 0rem !important;
 	}
 
 	.rmu-logo-letter.description {
-		font-size: 12px !important;
+		font-size: 14px !important;
 		letter-spacing: 0.3rem !important;
 	}
 

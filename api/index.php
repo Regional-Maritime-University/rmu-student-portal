@@ -1,80 +1,267 @@
 <?php
 session_start();
+
 /*
 * Designed and programmed by
 * @Author: Francis A. Anlimah
 */
 
-require "../bootstrap.php";
-
-use Src\Controller\StudentController;
-use Src\Controller\ExposeDataController;
-
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET,POST");
+header("Access-Control-Allow-Methods: GET,POST,PUT,DELETE");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-$user = new StudentController($host, $port, $db, $user, $pass);
-$expose = new ExposeDataController();
+require "../bootstrap.php";
 
-// Handles all GET requests
+use Src\Controller\Course;
+use Src\Core\Base;
+
+if (Base::sessionExpire()) {
+    http_response_code(401);
+    die(json_encode(array("success" => false, "message" => "logout")));
+}
+
+$config = require('../config/database.php');
+$db_server = "mysql";
+$db_username = isset($_SESSION["connection"]["username"]) && !empty($_SESSION["connection"]["username"]) ? $_SESSION["connection"]["username"] : getenv('LOCAL_DB_ADMISSION_USERNAME');
+$db_password = isset($_SESSION["connection"]["password"]) && !empty($_SESSION["connection"]["password"]) ? $_SESSION["connection"]["password"] : getenv('LOCAL_DB_ADMISSION_PASSWORD');
+
+use Src\Controller\Student;
+use Src\Core\Validator;
+use Src\Controller\Semester;
+
+$fullUrl = $_SERVER["REQUEST_URI"];
+$urlParse = parse_url($fullUrl, PHP_URL_PATH);
+$urlPath = str_replace("/rmu-student/api/", "", $urlParse);
+$separatePath = explode("/", $urlPath);
+$resourceRequested = count($separatePath);
+
+$module = $separatePath[0];
+
+// All GET request will be sent here
 if ($_SERVER['REQUEST_METHOD'] == "GET") {
+    $action = $separatePath[1];
 
-    // student data after successfull login
-    if ($_GET["url"] == "studentLoginSet") {
+    if ($module === 'student') {
+        $studentObj = new Student($config["database"][$db_server], $db_server, $db_username, $db_password);
 
-        if (!isset($_POST["studentIndexNumber"]) || empty($_POST["studentIndexNumber"]))
-            die(json_encode(array("success" => false, "message" => "Invalid request!")));
-    }
+        switch ($action) {
+            case 'semester-courses':
+                $st_semester_courses = $studentObj->fetchRegisteredUnregisteredCoursesForCurrent(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["student"]["level"]["level"],
+                    $_SESSION["student"]["level"]["semester"]
+                );
+                if (empty($st_semester_courses)) {
+                    die(json_encode(array("success" => false, "message" => "No courses assigned to you yet.")));
+                }
+                die(json_encode(array("success" => true, "message" => $st_semester_courses)));
 
-    // student data
-    else if ($_GET["url"] == "studentData") {
+                // gets all the assigned semester courses 
+            case 'other-semester-courses':
+                $st_semester_courses = $studentObj->fetchRegisteredUnregisteredCoursesForPrevious(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["student"]["level"]["level"],
+                    $_SESSION["student"]["level"]["semester"],
+                    $_SESSION["semester"]["id"]
+                );
+                if (empty($st_semester_courses)) {
+                    die(json_encode(array("success" => false, "message" => "You do not have unregistered courses.")));
+                }
+                die(json_encode(array("success" => true, "message" => $st_semester_courses)));
 
-        if (!isset($_POST["studentIndexNumber"]) || empty($_POST["studentIndexNumber"]))
-            die(json_encode(array("success" => false, "message" => "Invalid request!")));
-    }
+                // gets all the assigned semester courses 
+            case 'registered-semester-courses':
+                $reg_semester_courses = $studentObj->fetchRegisteredCoursesForCurrent(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["semester"]["id"]
+                );
+                if (empty($reg_semester_courses)) {
+                    die(json_encode(array("success" => false, "message" => "You have not registered any course(s) this semester.")));
+                }
+                die(json_encode(array("success" => true, "message" => $reg_semester_courses)));
 
-    // student courses for the semester
-    else if ($_GET["url"] == "semesterCourses") {
+            case 'registration-summary':
+                $result = $studentObj->fetchCourseRegistrationSummary(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["semester"]["id"]
+                );
+                die(json_encode(array("success" => true, "message" => $result)));
 
-        if (!isset($_POST["studentIndexNumber"]) || empty($_POST["studentIndexNumber"]))
-            die(json_encode(array("success" => false, "message" => "Invalid request!")));
+            default:
+                die(json_encode(array("success" => false, "message" => "No match found for your request!")));
+        }
+    } else if ($module === 'course') {
+        $courseObj = new Course($config["database"]["mysql"]);
+
+        switch ($action) {
+            case 'info':
+                if (!isset($_GET["cc"]) || empty($_GET["cc"])) {
+                    die(json_encode(array("success" => false, "message" => "Invalid request!")));
+                }
+                $course_info = $courseObj->courseInfo($_GET["cc"]);
+                if (empty($course_info)) {
+                    die(json_encode(array("success" => false, "message" => "No results found for this course!")));
+                }
+                die(json_encode(array("success" => true, "message" => $course_info)));
+                break;
+
+            default:
+                # code...
+                break;
+        }
     }
 }
 
-// Handles all POST requests
-else if ($_SERVER['REQUEST_METHOD'] == "POST") {
+//
+elseif ($_SERVER['REQUEST_METHOD'] == "POST") {
+    $action = $separatePath[1];
 
-    // student login
-    if ($_GET["url"] == "studentLogin") {
+    if ($module === 'student') {
+        $studentObj = new Student($config["database"]["mysql"]);
 
-        if (!isset($_SESSION["_start"]) || !isset($_POST["_logToken"]) || empty($_SESSION["_start"]) || empty($_POST["_logToken"]))
-            die(json_encode(array("success" => false, "message" => "Missing required parameters!")));
+        switch ($action) {
 
-        if ($_POST["_logToken"] !== $_SESSION["_start"]) die(json_encode(array("success" => false, "message" => "Invalid request!")));
-        if (!isset($_POST["index_number"])) die(json_encode(array("success" => false, "message" => "Missing input: Index number is required!")));
-        if (!isset($_POST["password"])) die(json_encode(array("success" => false, "message" => "Missing input: Password is required!")));
+            case 'login':
+                if (!isset($_SESSION["_start"]) || empty($_SESSION["_start"]))
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 1!")));
+                if (!isset($_POST["_logToken"]) || empty($_POST["_logToken"]))
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 2!")));
+                if ($_POST["_logToken"] !== $_SESSION["_start"])
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 3!")));
 
-        $index_number = $expose->validateIndexNumber($_POST["index_number"]);
-        $password = $expose->validatePassword($_POST["password"]);
-        $result = $user->loginStudent($index_number, $password);
+                $username = Validator::IndexNumber($_POST["usp_identity"]);
+                $password = Validator::Password($_POST["usp_password"]);
 
-        if (!$result) {
-            $_SESSION['isLoggedIn'] = true;
-            die(json_encode(array("success" => false, "message" => "Incorrect index number or password! ")));
+                $result = $studentObj->login($username, $password);
+                if (!$result["success"]) die(json_encode($result));
+
+                if ($result["message"]["default_password"]) $_SESSION["student"]['level_admitted'] = $result["message"]["level_admitted"];
+                $_SESSION["student"]['login'] = true;
+                $_SESSION["student"]['index_number'] = $result["message"]["index_number"];
+                $_SESSION["student"]['class'] = $result["message"]["fk_class"];
+                $_SESSION["student"]['default_password'] = $result["message"]["default_password"];
+                $_SESSION["student"]['programme_duration'] = $result["message"]["programme_duration"];
+
+                $current_level = $studentObj->getCurrentLevel($_SESSION["student"]['index_number']);
+                if (!empty($current_level)) {
+                    $_SESSION["student"]['level'] = $current_level;
+
+                    $semesterObj = new Semester($config["database"]["mysql"]);
+                    $semester_data = $semesterObj->currentSemester();
+                    if (!empty($semester_data)) {
+                        $_SESSION["semester"]["id"] = $semester_data["semester_id"];
+                        $_SESSION["semester"]["name"] = $semester_data["semester_name"];
+                        $_SESSION["semester"]["reg_status"] = $semester_data["reg_open_status"];
+                        $_SESSION["semester"]["reg_date"] = $semester_data["reg_end_date"];
+                        $_SESSION["semester"]["acad_y_id"] = $semester_data["academic_year_id"];
+                        $_SESSION["semester"]["acad_y_name"] = $semester_data["academic_year_name"];
+                    }
+                }
+
+                die(json_encode(array("success" => true,  "message" => "Login successfull!")));
+
+            case 'create-password':
+                if (!isset($_SESSION["_start_create_password"]) || empty($_SESSION["_start_create_password"]))
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 1!")));
+                if (!isset($_POST["_cpToken"]) || empty($_POST["_cpToken"]))
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 2!")));
+                if ($_POST["_cpToken"] !== $_SESSION["_start_create_password"])
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 3!")));
+
+                $password = Validator::Password2($_POST["new-usp-password"]);
+                $result = $studentObj->createNewPassword($_SESSION["student"]["index_number"], $password);
+                if (!$result["success"]) die(json_encode($result));
+                $_SESSION["student"]['default_password'] = 0;
+                die(json_encode($result));
+
+            case 'setup-account':
+                if (!isset($_POST["index_number"]) || empty($_POST["index_number"]))
+                    die(json_encode(array("success" => false, "message" => "Missing parameter in request: index number!")));
+                if (!isset($_SESSION["student"]["index_number"]) || empty($_SESSION["student"]["index_number"]))
+                    die(json_encode(array("success" => false, "message" => "Missing parameter in request: index number!")));
+                if (!isset($_SESSION["student"]["level_admitted"]) || empty($_SESSION["student"]["level_admitted"]))
+                    die(json_encode(array("success" => false, "message" => "Missing parameter in request: level admitted!")));
+                if (!isset($_SESSION["student"]["programme_duration"]) || empty($_SESSION["student"]["programme_duration"]))
+                    die(json_encode(array("success" => false, "message" => "Missing parameter in request: program duration!")));
+                if ($_POST["index_number"] !== $_SESSION["student"]["index_number"])
+                    die(json_encode(array("success" => false, "message" => "Invalid request: 3!")));
+
+                $setup_result = $studentObj->setupAccount($_SESSION["student"]);
+                //die(json_encode($setup_result));
+                if (isset($setup_result["data"]) && !empty($setup_result["data"]["current_level"])) {
+                    $_SESSION["student"]['level'] = $setup_result["data"]["current_level"];
+
+                    $semesterObj = new Semester($config["database"]["mysql"]);
+                    $semester_data = $semesterObj->currentSemester();
+                    if (!empty($semester_data)) {
+                        $_SESSION["semester"]["id"] = $semester_data["semester_id"];
+                        $_SESSION["semester"]["name"] = $semester_data["semester_name"];
+                        $_SESSION["semester"]["reg_status"] = $semester_data["reg_open_status"];
+                        $_SESSION["semester"]["reg_date"] = $semester_data["reg_end_date"];
+                        $_SESSION["semester"]["acad_y_id"] = $semester_data["academic_year_id"];
+                        $_SESSION["semester"]["acad_y_name"] = $semester_data["academic_year_name"];
+                    }
+                }
+                die(json_encode($setup_result));
+
+                // gets all the assigned semester courses 
+            case 'semester-courses':
+                $st_semester_courses = $studentObj->fetchSemesterCourses(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["student"]["level"]["level"],
+                    $_SESSION["student"]["level"]["semester"]
+                );
+                if (empty($st_semester_courses)) {
+                    die(json_encode(array("success" => false, "message" => "No courses assigned to you yet.")));
+                }
+                die(json_encode(array("success" => true, "message" => $st_semester_courses)));
+
+            case 'register-courses':
+                if (!isset($_POST['selected-course']) || !is_array($_POST['selected-course'])) {
+                    die(json_encode(array("success" => false,  "message" => "You have not selected any course!")));
+                }
+                $selected_courses = Validator::InputTextNumberForArray($_POST['selected-course']);
+                $result = $studentObj->registerSemesterCourses(
+                    $selected_courses,
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["semester"]["id"]
+                );
+                $feed = Validator::SendResult(
+                    $result,
+                    "You have successfully registered $result courses for the semester!",
+                    "Failed to register your semester courses. The process could not complete!"
+                );
+                die(json_encode($feed));
+
+            case 'reset-course-registration':
+                $result = $studentObj->resetCourseRegistration(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["semester"]["id"]
+                );
+                $feed = Validator::SendResult(
+                    $result,
+                    "Semester course registration reseted!",
+                    "Failed to reset semester courses registration!"
+                );
+                die(json_encode($feed));
+
+                // gets all the assigned semester courses 
+            case 'add-course-to-register':
+                $st_semester_courses = $studentObj->fetchCoursesBySemAndLevel(
+                    $_SESSION["student"]["index_number"],
+                    $_SESSION["student"]["level"]["level"],
+                    $_SESSION["student"]["level"]["semester"]
+                );
+                if (empty($st_semester_courses)) {
+                    die(json_encode(array("success" => false, "message" => "You don't have unregistered courses.")));
+                }
+                die(json_encode(array("success" => true, "message" => $st_semester_courses)));
+
+            default:
+                # code...
+                break;
         }
-
-        $_SESSION['studentIndexNumber'] = $result["index_number"];
-        $_SESSION['isLoggedIn'] = true;
-
-        die(json_encode(array("success" => true, "message" => "Login successfull!")));
     }
-
-    // Register courses
-    else if ($_GET["url"] == "registerCourses") {
-    }
-} else {
-    http_response_code(405);
 }
