@@ -33,7 +33,8 @@ use Src\Controller\Semester;
 
 $fullUrl = $_SERVER["REQUEST_URI"];
 $urlParse = parse_url($fullUrl, PHP_URL_PATH);
-$urlPath = str_replace("/rmu-student/api/", "", $urlParse);
+$urlPath = str_replace("/rmu/student-portal/api/", "", $urlParse);
+//die(json_encode($urlPath));
 $separatePath = explode("/", $urlPath);
 $resourceRequested = count($separatePath);
 
@@ -133,7 +134,6 @@ elseif ($_SERVER['REQUEST_METHOD'] == "POST") {
 
                 $username = Validator::IndexNumber($_POST["usp_identity"]);
                 $password = Validator::Password($_POST["usp_password"]);
-
                 $result = $studentObj->login($username, $password);
                 if (!$result["success"]) die(json_encode($result));
 

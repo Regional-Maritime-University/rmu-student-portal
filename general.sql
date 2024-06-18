@@ -68,3 +68,24 @@ CREATE INDEX programs_weekend_idx1 ON `programs` (`weekend`);
 CREATE INDEX programs_updated_at_idx1 ON `programs` (`updated_at`);
 CREATE INDEX programs_archived_idx1 ON `programs` (`archived`);
 
+CREATE TABLE `programs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fk_type` int(11),
+  `fk_department` int(11),
+  `name` varchar(255) NOT NULL,
+  `merit` varchar(255) DEFAULT NULL,
+  `regulation` varchar(50) DEFAULT NULL,
+  `category` varchar(25) DEFAULT 'DEGREE',
+  `code` varchar(20) DEFAULT NULL,
+  `index_code` varchar(5) DEFAULT NULL,
+  `faculty` varchar(255) DEFAULT NULL,
+  `duration` varchar(50) DEFAULT NULL,
+  `dur_format` varchar(50) DEFAULT NULL,
+  `num_of_semesters` int(11) DEFAULT '8',
+  `regular` tinyint(1) DEFAULT '1',
+  `weekend` tinyint(4) DEFAULT '0',
+  `group` char(1) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `archived` TINYINT(1) DEFAULT 0,
+  PRIMARY KEY (`id`)
+)ENGINE=INNODB COMMENT='mysql://root:@host:3306/rmu_admissions_test/programs';
