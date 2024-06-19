@@ -3,20 +3,19 @@
 namespace Src\Controller;
 
 use Src\Core\Database;
-use Src\Core\Base;
 
 class Student
 {
     private $dm;
 
-    public function __construct($config, $dbServer = "mysql", $user = "root", $pass = "")
+    public function __construct($config, $dbServer, $user, $pass)
     {
         $this->dm = new Database($config, $dbServer, $user, $pass);
     }
 
     public function login($index_number, $password)
     {
-        $sql = "SELECT * FROM " . Base::$DB_SP . ".`student` WHERE `index_number` = :u";
+        $sql = "SELECT * FROM `student` WHERE `index_number` = :u";
         $data = $this->dm->run($sql, array(':u' => $index_number))->one();
         if (!empty($data) && password_verify($password, $data["password"]))
             return array("success" => true, "message" => $data);
@@ -28,7 +27,7 @@ class Student
         $is_old = $this->login($index_number, $password);
         if ($is_old["success"]) return array("success" => false, "message" => "Please create a new password to continue!");
         $hashed_pass = password_hash($password, PASSWORD_BCRYPT);
-        $sql = "UPDATE " . Base::$DB_SP . ".`student` SET `password` = :p, `default_password` = 0 WHERE `index_number` = :u";
+        $sql = "UPDATE `student` SET `password` = :p, `default_password` = 0 WHERE `index_number` = :u";
         $data = $this->dm->run($sql, array(':p' => $hashed_pass, ':u' => $index_number))->edit();
         if (!empty($data)) return array(
             "success" => true,
@@ -43,7 +42,7 @@ class Student
     public function getClassAssignedCourses($class_code): mixed
     {
         $class_assigned_courses = $this->dm->run(
-            "SELECT `fk_course` AS course, `credits`, `level`, `semester` FROM " . Base::$DB_SP . ".`section` WHERE `fk_class` = :c",
+            "SELECT `fk_course` AS course, `credits`, `level`, `semester` FROM `section` WHERE `fk_class` = :c",
             array(":c" => $class_code)
         );
         if (empty($class_assigned_courses)) return array(
@@ -58,7 +57,7 @@ class Student
         $courses_assigned = 0;
         foreach ($courses as $course) {
             $courses_assigned += $this->dm->run(
-                "INSERT INTO " . Base::$DB_SP . ".`assigned_courses` (`fk_course`, `fk_student`, `credits`, `level`, `semester`) 
+                "INSERT INTO `assigned_courses` (`fk_course`, `fk_student`, `credits`, `level`, `semester`) 
                 VALUES (:fkc, :fks, :c, :l, :s)",
                 array(
                     ":fkc" => $course["course"],
@@ -75,7 +74,7 @@ class Student
     public function getCoursesByClassLevelSemester($class_code, $level, $semester): mixed
     {
         $class_assigned_courses = $this->dm->run(
-            "SELECT `fk_course` AS course, `credits`, `level`, `semester` FROM " . Base::$DB_SP . ".`section` 
+            "SELECT `fk_course` AS course, `credits`, `level`, `semester` FROM `section` 
             WHERE `fk_class` = :c AND `level` = :l AND `semester` = :s",
             array(":c" => $class_code, ":l" => $level, ":s" => $semester)
         )->all();
@@ -89,7 +88,7 @@ class Student
     public function getCurrentLevel($index_number): mixed
     {
         return $this->dm->run(
-            "SELECT * FROM " . Base::$DB_SP . ".`level` WHERE `fk_student` = :fks AND `active` = 1",
+            "SELECT * FROM `level` WHERE `fk_student` = :fks AND `active` = 1",
             array(":fks" => $index_number)
         )->one();
     }
@@ -97,7 +96,7 @@ class Student
     public function setupAccount($data): mixed
     {
         $total_semesters = $this->dm->run(
-            "SELECT COUNT(`id`) AS `total_semesters` FROM " . Base::$DB_SP . ".`level` WHERE `fk_student` = :fks",
+            "SELECT COUNT(`id`) AS `total_semesters` FROM `level` WHERE `fk_student` = :fks",
             array(":fks" => $data["index_number"])
         )->one()["total_semesters"];
         if ($total_semesters) return array(
@@ -123,7 +122,7 @@ class Student
             $total_assigned_courses += $this->assignStudentCourses($data["index_number"], $assigned_level_courses["data"]);
 
             $sem_count += $this->dm->run(
-                "INSERT INTO " . Base::$DB_SP . ".`level` (`level`, `semester`, `active`, `fk_student`) VALUES (:l, :s, :a, :fks)",
+                "INSERT INTO `level` (`level`, `semester`, `active`, `fk_student`) VALUES (:l, :s, :a, :fks)",
                 array(":l" => $data["level_admitted"], ":s" => $sem, ":a" => $active, ":fks" => $data["index_number"])
             )->add();
         }
@@ -148,7 +147,7 @@ class Student
     {
         $registered_courses = 0;
         foreach ($courses as $course) {
-            $query = "INSERT INTO " . Base::$DB_SP . ".`course_registration` (`fk_course`, `fk_student`, `fk_semester`) VALUES(:fkc, :fks, :fkm)";
+            $query = "INSERT INTO `course_registration` (`fk_course`, `fk_student`, `fk_semester`) VALUES(:fkc, :fks, :fkm)";
             $registered_courses += $this->dm->run(
                 $query,
                 array(':fkc' => $course, ':fks' => $student, ':fkm' => $semester)
@@ -159,14 +158,14 @@ class Student
 
     public function resetCourseRegistration($student, $semester): mixed
     {
-        $query = "DELETE FROM " . Base::$DB_SP . ".`course_registration` WHERE `fk_student` = :fks AND `fk_semester` = :fkm";
+        $query = "DELETE FROM `course_registration` WHERE `fk_student` = :fks AND `fk_semester` = :fkm";
         return $this->dm->run($query, array(':fks' => $student, ':fkm' => $semester))->del();
     }
 
     public function fetchCourseRegistrationSummary($student, $semester): mixed
     {
         $query = "SELECT COUNT(cr.`id`) AS total_course, SUM(c.`credits`) AS total_credit 
-        FROM " . Base::$DB_SP . ".`course_registration` AS cr, " . Base::$DB_SP . ".`course` AS c 
+        FROM `course_registration` AS cr, `course` AS c 
         WHERE cr.`fk_course` = c.`code` AND cr.`fk_student` = :fks AND cr.`fk_semester` = :fkm";
         return $this->dm->run($query, array(':fks' => $student, ':fkm' => $semester))->one();
     }
@@ -200,9 +199,9 @@ class Student
         LEFT JOIN 
             `course_category` AS cc ON cs.`fk_category` = cc.`id`
         LEFT JOIN 
-            " . Base::$DB_SP . ".`assigned_courses` AS ac ON ac.`fk_course` = cs.`code`
+            `assigned_courses` AS ac ON ac.`fk_course` = cs.`code`
         LEFT JOIN 
-            " . Base::$DB_SP . ".`student` AS st ON ac.`fk_student` = st.`index_number`
+            `student` AS st ON ac.`fk_student` = st.`index_number`
         LEFT JOIN 
             `course_registration` AS cr ON cr.`fk_course` = cs.`code` AND cr.`fk_student` = st.`index_number`
         WHERE 
@@ -226,9 +225,9 @@ class Student
         LEFT JOIN 
             `course_category` AS cc ON cs.`fk_category` = cc.`id`
         LEFT JOIN 
-            " . Base::$DB_SP . ".`assigned_courses` AS ac ON ac.`fk_course` = cs.`code`
+            `assigned_courses` AS ac ON ac.`fk_course` = cs.`code`
         LEFT JOIN 
-            " . Base::$DB_SP . ".`student` AS st ON ac.`fk_student` = st.`index_number`
+            `student` AS st ON ac.`fk_student` = st.`index_number`
         LEFT JOIN 
             `course_registration` AS cr ON cr.`fk_course` = cs.`code` AND 
             cr.`fk_student` = st.`index_number` AND cr.`fk_semester` = :fks
@@ -255,7 +254,7 @@ class Student
         cs.`code` AS course_code, cs.`name` AS course_name, cs.`credits` AS credits, cs.`level`, cs.`semester`, 
         cc.`id` AS category_id, cc.`name` AS category_name 
         FROM 
-        `course` AS cs, `course_category` AS cc, " . Base::$DB_SP . ".`assigned_courses` AS ac, " . Base::$DB_SP . ".`student` AS st 
+        `course` AS cs, `course_category` AS cc, `assigned_courses` AS ac, `student` AS st 
         WHERE 
         ac.`fk_course` = cs.`code` AND ac.`fk_student` = st.`index_number` AND cs.`fk_category` = cc.`id` AND 
         st.`index_number` = :i AND cs.`level` = :l AND cs.`semester` = :s";
@@ -296,7 +295,7 @@ class Student
         cs.`code` AS course_code, cs.`name` AS course_name,  cs.`credits` AS credits, cs.`level`, cs.`semester`,  
         cr.`registered` AS reg_status, cc.`id` AS category_id, cc.`name` AS category_name 
         FROM 
-        `course_registration` AS cr, `course` AS co, `course_category` AS cc, `semester` AS sm, " . Base::$DB_SP . ".`student` AS st 
+        `course_registration` AS cr, `course` AS co, `course_category` AS cc, `semester` AS sm, `student` AS st 
         WHERE 
         cr.`fk_course` = cs.`code` AND cr.`fk_student` = st.`index_number` AND cr.`fk_semester` = sm.`id` AND 
         cs.`fk_category` = cc.`id` AND st.`index_number` = :i AND sm.`name` = :s";
@@ -313,7 +312,7 @@ class Student
         JOIN `course` AS cs ON cr.`fk_course` = cs.`code` 
         JOIN `course_category` AS cc ON cs.`fk_category` = cc.`id` 
         JOIN `semester` AS sm ON cr.`fk_semester_registered` = sm.`id` 
-        JOIN " . Base::$DB_SP . ".`student` AS st ON cr.`fk_student` = st.`index_number` 
+        JOIN `student` AS st ON cr.`fk_student` = st.`index_number` 
         WHERE 
         cr.`fk_course` = cs.`code` AND cr.`fk_student` = st.`index_number` AND 
         cr.`fk_semester_registered` = sm.`id` AND cs.`fk_category` = cc.`id` AND 
@@ -333,7 +332,7 @@ class Student
         JOIN `course` AS cs ON cr.`fk_course` = cs.`code`
         JOIN `course_category` AS cc ON cs.`fk_category` = cc.`id`
         JOIN `semester` AS sm ON cr.`fk_semester_registered` = sm.`id`
-        JOIN " . Base::$DB_SP . ".`student` AS st ON cr.`fk_student` = st.`index_number` 
+        JOIN `student` AS st ON cr.`fk_student` = st.`index_number` 
         WHERE 
         cr.`fk_course` = cs.`code` AND cr.`fk_student` = st.`index_number` AND 
         cr.`fk_semester_registered` = sm.`id` AND cs.`fk_category` = cc.`id` AND 
@@ -349,7 +348,7 @@ class Student
         cs.`code` AS course_code, cs.`name` AS course_name,  cs.`credits` AS credits, cs.`level`, cs.`semester`, 
         cr.`registered` AS reg_status, cc.`id` AS category_id, cc.`name` AS category_name 
         FROM 
-        `course_registration` AS cr, `course` AS cs, `course_category` AS cc, `semester` AS sm, " . Base::$DB_SP . ".`student` AS st 
+        `course_registration` AS cr, `course` AS cs, `course_category` AS cc, `semester` AS sm, `student` AS st 
         WHERE 
         cr.`fk_course` = cs.`code`AND cr.`fk_student` = st.`index_number` AND 
         cr.`fk_semester` = sm.`id` AND cs.`fk_category` = cc.`id` AND 
@@ -364,7 +363,7 @@ class Student
         cr.`registered` AS reg_status, cc.`id` AS category_id, cc.`name` AS category_name 
         FROM 
         `course_registration` AS cr, `course` AS co, `course_category` AS cc, 
-        `semester` AS sm, " . Base::$DB_SP . ".`student` AS st, `department` AS d 
+        `semester` AS sm, `student` AS st, `department` AS d 
         WHERE 
         cr.`fk_course` = cs.`code` AND cr.`fk_student` = st.`index_number` AND 
         cr.`fk_semester` = sm.`id` AND cs.`fk_category` = cc.`id` AND cs.`fk_department` = d.`id` AND 
@@ -386,11 +385,11 @@ class Student
         cs.`code` AS course_code, cs.`name` AS course_name, cs.`credits` AS credits, cs.`level`, cs.`semester`, 
         cc.`id` AS category_id, cc.`name` AS category_name 
         FROM 
-        `course` AS cs, `course_category` AS cc, " . Base::$DB_SP . ".`assigned_courses` AS ac, " . Base::$DB_SP . ".`student` AS st 
+        `course` AS cs, `course_category` AS cc, `assigned_courses` AS ac, `student` AS st 
         WHERE 
         ac.`fk_course` = cs.`code` AND ac.`fk_student` = st.`index_number` AND cs.`fk_category` = cc.`id` AND 
         st.`index_number` = :i AND cs.`level` < :l AND cs.`semester` = :s AND cs.`code` NOT IN (
-            SELECT ac.`fk_course` FROM " . Base::$DB_SP . ".`assigned_courses` AS ac WHERE ac.`fk_student` = :i
+            SELECT ac.`fk_course` FROM `assigned_courses` AS ac WHERE ac.`fk_student` = :i
         )";
         return $this->dm->run($query, array(':i' => $index_number, ':l' => $level, ':s' => $current_semester_name))->all();
     }

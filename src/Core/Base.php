@@ -6,10 +6,6 @@ use Src\Core\Functions;
 
 class Base
 {
-    public static $DB_AD = 'rmu_admissions';
-    public static $DB_SP = 'rmu_student_portal';
-    public static $DB_GEN = 'rmu_general';
-
     public static function dd($data)
     {
         echo "<pre>";
